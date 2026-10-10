@@ -20,18 +20,24 @@ jobs:
 
     - name: Setup Android SDK
       run: |
-        mkdir -p $HOME/android-sdk/cmdline-tools
-        cd $HOME/android-sdk/cmdline-tools
+        export ANDROID_SDK_ROOT=$HOME/android-sdk
+        mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
+        cd $ANDROID_SDK_ROOT/cmdline-tools
         wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
         unzip -q commandlinetools-linux-11076708_latest.zip
-        mv cmdline-tools latest || true
-        export ANDROID_SDK_ROOT=$HOME/android-sdk
-        export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools
+        rm commandlinetools-linux-11076708_latest.zip
+        mv cmdline-tools latest
+        export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
         yes | sdkmanager --licenses || true
         sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
         echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+        echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
         echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
         echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
+
+    - name: Create local.properties
+      working-directory: android_planner
+      run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
     - name: Install Gradle
       uses: gradle/actions/setup-gradle@v4
@@ -43,7 +49,7 @@ jobs:
       run: |
         gradle wrapper --gradle-version 8.10.2
         chmod +x gradlew
-        ./gradlew assembleDebug --stacktrace --info
+        ./gradlew assembleDebug --stacktrace
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
